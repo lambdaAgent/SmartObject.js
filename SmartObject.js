@@ -18,14 +18,10 @@ function SmartObject(SchemaName, obj){
         schema: () => util.convertSmartSchemaToObject(_interfaceAPI),
 
         // setValueOfProps: setValueOfProps,
-
-        addProp(propsName, propTypes){
-        },
-        extendProps(smartObject){
-        	//only accept smartobject
-        	//check for smartobject and isObject frozen
-
-        },
+        //TODO:
+        setMultiProps(object){ }, //accept an object an loop it's property
+        addProp(propsName, propTypes){ }, // return Object.assign({})
+        extendProps(smartObject){ },
         removeProp: removeProps,
         __$$__getValue: () => _objWithValue, //return _objWithValue
         __$$__getType: () => _objWithType,
@@ -39,6 +35,8 @@ function SmartObject(SchemaName, obj){
 	return Object.freeze(_interfaceAPI);
 	// return _interfaceAPI;
 }
+
+
 
 module.exports = SmartObject;
 
