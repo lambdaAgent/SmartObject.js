@@ -17,11 +17,32 @@ function SmartObject(SchemaName, obj){
         flatten: () => util.convertSmartObjectToObject(_interfaceAPI),
         schema: () => util.convertSmartSchemaToObject(_interfaceAPI),
 
-        // setValueOfProps: setValueOfProps,
-        //TODO:
-        setMultiProps(object){ }, //accept an object an loop it's property
-        addProp(propsName, propTypes){ }, // return Object.assign({})
-        extendProps(smartObject){ },
+        setProps(args1, args2){ 
+        	//set the value of SmartObject
+			//accept an object or 2string ("props","value")
+        	if(typeof args1 === "string" && args2){
+        		_interfaceAPI[args1] = args2
+        	} else if (typeof args1 === "object"){
+        		var keys = Object.keys(args1);
+        		keys.map(k => {
+        			_interfaceAPI[k] = args1[k];
+        		});  
+        	}
+        }, 
+        addSchema(newSchema){ 
+        	//add extra schema on top of original schema
+        	//since _interfaceAPI is frozen, need to do cloning, and freeze the newClone 
+			//accept an object or 2string ("props","value")
+			
+			if(typeof newSchema !== "object" || Array.isArray(true)){
+				throw new TypeError("addProps only accept an object Schema")
+        	}
+    	
+    		var _newObjWithType = createObjectWithType(newSchema);
+    		_objWithType = Object.assign({}, _objWithType, _newObjWithType);
+    		// _objWithValue = createObjectWithValue(_objWithType);
+
+        },
         removeProp: removeProps,
         __$$__getValue: () => _objWithValue, //return _objWithValue
         __$$__getType: () => _objWithType,
@@ -30,10 +51,9 @@ function SmartObject(SchemaName, obj){
 	};
 	_interfaceAPI = Object.assign({}, _interfaceAPI, _objWithType)
 	attachGetterSetter(_interfaceAPI, _objWithType, _objWithValue, _nestedSchema);
-	//freeze the interface
 
+	//freeze the interface
 	return Object.freeze(_interfaceAPI);
-	// return _interfaceAPI;
 }
 
 
@@ -65,10 +85,54 @@ function flatten(_objWithValue){
 function addProps(){}
 function removeProps(){}
 
+function findFunctionBodyFromString(str){
+	//thre are several way to include function
+	//1. fn: () => {}
+	//2. fn() { }
+	//3. fn: function{}
+	//4. fn: () => 
+	//1 - 3 has curly, find first curly, find last curly
+	//4, check if it has arrow and no curly.
+	var openCurly = str.indexOf("{");
+	var closeCurly = findLastCurly(str);
+	var body = str.slice(openCurly+1, closeCurly);
+	var fatArrow = str.indexOf("=>");
+	if(fatArrow >= 0 && openCurly === -1){
+		//if has arrow and no curly
+		body = "return " + str.slice(fatArrow+2);
+	}
+
+	return body;
+}
+
+function findLastCurly(str){
+	var lastFoundCurly = -1;
+
+	function findCloseCurly(str, startIndex){
+		if(str.indexOf("}") === -1){
+			return lastFoundCurly;
+		}
+
+		lastFoundCurly = str.indexOf("}");
+	}
+
+	findCloseCurly(str, 0);
+	return lastFoundCurly
+}
+
 function createObjectWithValue(_objWithType){
 	var result = {};
 	Object.keys(_objWithType).map(k => {
 		if(_objWithType[k].indexOf("[Function]:") !== -1){
+			//if "[function]:" exists;
+			// attempt to initiate function immediately;
+				// var openBracket = _objWithType[k].indexOf("(");
+				// var closeBracket = _objWithType[k].indexOf(")");
+				// var args = _objWithType[k].slice(openBracket+1, closeBracket).split(",");
+				// args = args.map(el => el.split("___")[0]);
+				// var body = findFunctionBodyFromString(_objWithType[k]);
+				// var fn =  Function.call(null, ...args, body );
+				// result[k] = fn;
 			return result[k] = new Function();
 		}
 		switch(_objWithType[k].toLowerCase()){
@@ -209,7 +273,7 @@ function attachGetterSetter(_interfaceAPI, _objWithType, _objWithValue, _nestedS
 					//extends function with util.checkTypes(arguments, [arrayOfArgsTypes])
 					var functionName = _interfaceAPI.__$$__Name.Name+"."+propsName;
 					var newFunction = extendsFunctionWithArgumentsTypeChecking(val, _objWithType[propsName], functionName);
-					_objWithValue[propsName] = newFunction.bind(_objWithValue);
+					_objWithValue[propsName] = newFunction.bind(_interfaceAPI);
 					
 				}
 
@@ -280,10 +344,11 @@ function extendsFunctionWithArgumentsTypeChecking(originalFunction, functionExpr
 		return argumentsString.map(el => el.split("___")[1]);
 	}())
 	return function(){
-		//IMPORTANT : "this" will be bound to _objWithValue; line216;
+		//IMPORTANT : "this" will be bound to _interfaceAPI; line216;
 		//check if number of argumentsProvided match with argumentsTypes
 		util.checkForNumberArgumentsError(argsType, arguments, functionName);
 		util.checkTypesOfArguments(arguments, argsType, functionName);
+
 		originalFunction.apply(this,arguments);
 	}
 }

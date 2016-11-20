@@ -71,8 +71,6 @@ util.checkTypesOfArguments = function( args, types, functionName ) {
 };
 
 util.checkForNumberArgumentsError = function(argumentsAssignment, argumentsType, name){
-	console.log(argumentsAssignment);
-	console.log(argumentsType);
 	var errorMessage = `[${name}] ` + "expected " +argumentsAssignment.length+" number of arguments, but get "+argumentsType.length+ " arguments instead.";
 	if(argumentsAssignment.length !== argumentsType.length){
 		throw new Error(errorMessage);	
